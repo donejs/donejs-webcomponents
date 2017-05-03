@@ -3,10 +3,7 @@ var _ = require('lodash');
 
 module.exports = Generator.extend({
 	initializing: function () {
-		// Read the original package.json
-		this.pkg = this.fs.readJSON(
-			this.destinationPath('package.json'), {}
-		);
+		this.pkgPath = this.destinationPath('package.json');
 	},
 
 	installing: function() {
@@ -14,13 +11,20 @@ module.exports = Generator.extend({
 	},
 	
 	writing: function () {
-		var pkg = this.pkg;
-	 
-		var configDeps = pkg.steal.configDependencies =
-			pkg.steal.configDependencies || [];
+		// force writing to package.json so the user isn’t prompted
+		this.conflicter.force = true;
 
+		var pkg = require(this.pkgPath);
+	 
+		var configDeps = pkg.steal.configDependencies || [];
 		configDeps.push("node_modules/steal-conditional/conditional");
 
-		this.fs.writeJSON('package.json', pkg, null, ' ');
+		var newPkgConfig = {
+			steal: {
+				configDependencies: configDeps
+			}
+		};
+
+		this.fs.extendJSON(this.pkgPath, newPkgConfig);
 	}
 });
